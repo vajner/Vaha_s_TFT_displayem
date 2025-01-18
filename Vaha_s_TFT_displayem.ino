@@ -8,6 +8,9 @@
 #include <SPI.h>
 #include "Adafruit_miniTFTWing.h"
 #include "HX711.h"
+#include <EEPROM.h>
+#include <Fonts/FreeSans18pt7b.h>
+#include <Fonts/FreeSerif9pt7b.h>
 
 // color definitions
 const uint16_t Display_Color_Black = 0x0000;
@@ -23,23 +26,36 @@ const uint16_t Display_Color_White = 0xFFFF;
 uint16_t      Display_Text_Color = Display_Color_Blue;
 uint16_t      Display_Backround_Color = Display_Color_Black;
 uint16_t      Display_Text_Color_Value = Display_Color_Magenta;
-uint8_t       Display_Veigth_Size = 6;
+uint16_t      Display_Menu_Button_Color = Display_Color_White;
+//uint8_t       Display_Veigth_Size = 6;
 float         Kalibracni_Hodnota = 1997;
 
-int sensorVal = "";
-int sensorOldVal = "";
+int sensorVal = 0;
+int sensorOldVal = 0;
+byte pozice_hodnoty_vahy_x = 15;
+byte pozice_hodnoty_vahy_y = 95;
+//enum eTlacitka {STORNO, PLUS, MUNUS, MENU};
 
 
 
 #define TFT_CS 10
 #define TFT_DC 8
 #define TFT_RST 9
+#define Btn_menu PD6
+#define Btn_plus PD5
+#define Btn_minus PD4
+#define Btn_zpet PD3
 
-#define vahaDataPin 3
+#define vahaDataPin 12
 #define vahaClockPin 7
+//#define pin_Menu_Btn 4
+//#define pin_Plus_Btn 3
+//#define pin_Minus_Btn 2
+//#define pin_L_Btn 1
+//#define pin_R_Btn 0
 
 float vaha;
-float alibracni_faktor = 196404;
+//float kalibracni_faktor = 196404;
 
 HX711 vahovy_senzor;
 Adafruit_ST7735 TFTscreen = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
@@ -47,30 +63,43 @@ char sensorPrintout[4];
 byte TftOrientation = 3;
 
 void setup() {
+  pinMode(Btn_menu, INPUT_PULLUP);
+  pinMode(Btn_plus, INPUT_PULLUP);
+  pinMode(Btn_minus, INPUT_PULLUP);
+  pinMode(Btn_zpet, INPUT_PULLUP);
+
+
   Serial.begin(115200);
   initDisplay();
+  showLogo();
+  zobrazTlacitkaMenu();
+  zobrazZakladniMenu(true);
+  zobrazZahlaviVahy("Hmotnost", true);
   initVahovySenzor();
-  
+
+
+  TFTscreen.setFont(&FreeSans18pt7b);
 }
 
 void loop() {
+  String tlacitkoMenu = testMenuBtn();
 
   // nacti hodnotu senzoru na pinu A0
-  sensorVal = vahovy_senzor.get_units(HX711_AVERAGE_MODE)+0.5;
+  sensorVal = (vahovy_senzor.get_units(HX711_AVERAGE_MODE)+0.5);
   
   if (sensorVal != sensorOldVal) {
     vahovy_senzor.set_scale(Kalibracni_Hodnota);
     Serial.print("Vaha: ");
     Serial.println(sensorVal);
-    TFTscreen.setCursor(30, 60);
-    TFTscreen.setTextSize(Display_Veigth_Size);
+    TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
+    //TFTscreen.setTextSize(Display_Veigth_Size);
 
     // vycisti text pokud se hodnota zmenila
     TFTscreen.setTextColor(Display_Backround_Color);
     TFTscreen.print(sensorOldVal);
     
     TFTscreen.setTextColor(Display_Text_Color_Value);
-    TFTscreen.setCursor(30, 60);
+    TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
 
     // print hodnotu sensoru
     TFTscreen.print(sensorVal);
@@ -92,29 +121,31 @@ void initVahovySenzor() {
 
 void initDisplay() {
   Serial.println("Inicializace disleje ....");
-  TFTscreen.initR(INITR_BLACKTAB);  // inicializace ST7735S chipu
-
-  // Vymaz displej a nastav cerne pozadi
-  TFTscreen.setFont();
-  TFTscreen.fillScreen(Display_Backround_Color);
-  TFTscreen.setTextSize(1);
+  // inicializace ST7735S chipu
+  TFTscreen.initR(INITR_BLACKTAB);  
 
   //Otoc displej - datovy konektor vlevo
   TFTscreen.setRotation(3);
-
-  // zapis staticky text na displej
-  // nastav barvu textu
-  TFTscreen.setTextColor(Display_Text_Color);
-
-  // set the font size
-  TFTscreen.setTextSize(2);
-  // nastav souradnice pocatku textu
-  TFTscreen.setCursor(30, 10);
-  // zapis text
-  TFTscreen.print("Hmotnost");
-  TFTscreen.setCursor(0, 0);
-  TFTscreen.drawFastHLine(5, 30, 150, ST77XX_BLUE);
-  TFTscreen.drawFastHLine(5, 31, 150, ST77XX_BLUE);
-  TFTscreen.drawFastHLine(5, 32, 150, ST77XX_BLUE);
   Serial.println("... Hotovo ....");
 }
+
+
+
+
+
+
+
+void setKalibracniHodnota(float kalibracniHodnota) {
+  EEPROM.write(0, kalibracniHodnota);
+}
+
+int getKalibracniHodnota() {
+  int value = EEPROM.read(0);
+  if (isnan(value)) {
+    value = 0;
+  }
+  return value;
+}
+
+
+
