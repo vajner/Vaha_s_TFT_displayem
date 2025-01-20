@@ -9,8 +9,8 @@
 #include "Adafruit_miniTFTWing.h"
 #include "HX711.h"
 #include <EEPROM.h>
-#include <Fonts/FreeSans18pt7b.h>
-#include <Fonts/FreeSerif9pt7b.h>
+//#include <Fonts/FreeSans18pt7b.h>
+//#include <Fonts/FreeSerif9pt7b.h>
 
 // color definitions
 const uint16_t Display_Color_Black = 0x0000;
@@ -32,9 +32,15 @@ float         Kalibracni_Hodnota = 1997;
 
 int sensorVal = 0;
 int sensorOldVal = 0;
+char vybranaOperace = 0;
 byte pozice_hodnoty_vahy_x = 15;
 byte pozice_hodnoty_vahy_y = 95;
-//enum eTlacitka {STORNO, PLUS, MUNUS, MENU};
+boolean vazeni = true;
+boolean rezim_menu = false;
+int cursorPosition = 0;
+enum menuVolby {ZPET, PLUS, MINUS, MENU, null};
+//enum operace {NASTAVENI, KALIBRACE};
+
 
 
 
@@ -48,64 +54,104 @@ byte pozice_hodnoty_vahy_y = 95;
 
 #define vahaDataPin 12
 #define vahaClockPin 7
-//#define pin_Menu_Btn 4
-//#define pin_Plus_Btn 3
-//#define pin_Minus_Btn 2
-//#define pin_L_Btn 1
-//#define pin_R_Btn 0
-
 float vaha;
 //float kalibracni_faktor = 196404;
 
 HX711 vahovy_senzor;
 Adafruit_ST7735 TFTscreen = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
-char sensorPrintout[4];
+//char sensorPrintout[4];
 byte TftOrientation = 3;
 
 void setup() {
+  Serial.println("Nastaveni - setup()");
   pinMode(Btn_menu, INPUT_PULLUP);
   pinMode(Btn_plus, INPUT_PULLUP);
   pinMode(Btn_minus, INPUT_PULLUP);
   pinMode(Btn_zpet, INPUT_PULLUP);
-
-
   Serial.begin(115200);
   initDisplay();
-  showLogo();
+  //showLogo();
+  zobrazZahlavi("Hmotnost");
   zobrazTlacitkaMenu();
-  zobrazZakladniMenu(true);
-  zobrazZahlaviVahy("Hmotnost", true);
+  setMenuTlacitka("", "", "", "Menu");
   initVahovySenzor();
 
-
-  TFTscreen.setFont(&FreeSans18pt7b);
+  //TFTscreen.setFont(&FreeSans18pt7b);
 }
 
 void loop() {
-  String tlacitkoMenu = testMenuBtn();
+  menuVolby tlacitkoMenu = testMenuBtn();
+ 
+  switch (tlacitkoMenu) {
+    case MENU: {
+      Serial.println(" ---- Zvoleno MENU ---");
+      vazeni = false;
+      rezim_menu = true;
+      vymazZahlavi();
+      vymazVahu();
+      //zobrazZahlaviNasteveni(true, Display_Backround_Color, Display_Text_Color);
+      //zobrazZakladniMenu(true);
+      zobrazZahlavi("Nastaveni");
+      zobrazTlacitkaMenu();
+      vykresliMenu();
+      nakresliKuzor();
+      setMenuTlacitka("Zpet", "-", "+", "OK");
+      break;
+    }
+    case PLUS: {
+      Serial.println(" ---- Zvoleno PLUS ---");
+      menuUp();
+      nakresliKuzor();
+      break;
+    }
+    case MINUS: {
+      Serial.println(" ---- Zvoleno MINUS ---");
+      menuDown();
+      nakresliKuzor();
+      break;
+    }
+    case ZPET: {
+      Serial.println(" ---- Zvoleno ZPET ---");
+      if(rezim_menu) {
+        vazeni = true;
+      }
+      break;
+    }
+    default: {
+      tlacitkoMenu = null;
+    }
 
-  // nacti hodnotu senzoru na pinu A0
-  sensorVal = (vahovy_senzor.get_units(HX711_AVERAGE_MODE)+0.5);
-  
-  if (sensorVal != sensorOldVal) {
-    vahovy_senzor.set_scale(Kalibracni_Hodnota);
-    Serial.print("Vaha: ");
-    Serial.println(sensorVal);
+  }
+
+  if (vazeni) {
+    // nacti hodnotu senzoru na pinu A0
+    sensorVal = (vahovy_senzor.get_units(HX711_AVERAGE_MODE)+0.5);
+    
+    if (sensorVal != sensorOldVal) {
+      vahovy_senzor.set_scale(Kalibracni_Hodnota);
+      Serial.print("Vaha: ");
+      Serial.println(sensorVal);
+      TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
+      //TFTscreen.setTextSize(Display_Veigth_Size);
+
+      // vycisti text pokud se hodnota zmenila
+      TFTscreen.setTextColor(Display_Backround_Color);
+      TFTscreen.print(sensorOldVal);
+      
+      TFTscreen.setTextColor(Display_Text_Color_Value);
+      TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
+
+      // print hodnotu sensoru
+      TFTscreen.print(sensorVal);
+      sensorOldVal = sensorVal;
+      delay(1000);
+    } 
+  } /*else {
     TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
-    //TFTscreen.setTextSize(Display_Veigth_Size);
-
-    // vycisti text pokud se hodnota zmenila
     TFTscreen.setTextColor(Display_Backround_Color);
     TFTscreen.print(sensorOldVal);
-    
-    TFTscreen.setTextColor(Display_Text_Color_Value);
-    TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
-
-    // print hodnotu sensoru
-    TFTscreen.print(sensorVal);
-    sensorOldVal = sensorVal;
-    delay(1000);
-  }
+  }*/
+  
 }
 
 void initVahovySenzor() {
@@ -126,14 +172,9 @@ void initDisplay() {
 
   //Otoc displej - datovy konektor vlevo
   TFTscreen.setRotation(3);
+  TFTscreen.fillRect(0, 0, 160, 128, Display_Color_Black);
   Serial.println("... Hotovo ....");
 }
-
-
-
-
-
-
 
 void setKalibracniHodnota(float kalibracniHodnota) {
   EEPROM.write(0, kalibracniHodnota);
