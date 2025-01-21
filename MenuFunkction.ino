@@ -18,6 +18,10 @@ const byte menu_y = 38;
 const byte menu_vyska_radku=17;
 const byte kurzor_x = 5;
 const String kurzor = ">";
+boolean tl_1_active = true;
+boolean tl_2_active = true;
+boolean tl_3_active = true;
+boolean tl_4_active = true;
 
 
 //boolean inMenu = false;
@@ -70,11 +74,13 @@ void nakresliKuzor() {
 void menuDown(){
   cursorPosition = cursorPosition-1;
   rollMenu();
+  //delay(pauza);
 }
 
 void menuUp(){
   cursorPosition = cursorPosition+1;
   rollMenu();
+  //delay(pauza);
 }
 
 void rollMenu(){
@@ -92,6 +98,44 @@ void rollMenu(){
 
 void setMenuTlacitka(String tl_1_txt, String tl_2_txt, String tl_3_txt, String tl_4_txt) {
   byte y=116;
+  Serial.print("TL  1-");
+  if(!tl_1_txt.equals("")) {
+    Serial.print("povoleno");
+    tl_1_active=true;
+  } else {
+    Serial.print("zakazano");
+    tl_1_active=false;
+  }
+  
+  Serial.print("  2-");
+  if(!tl_2_txt.equals("")) {
+    Serial.print("povoleno");
+    tl_2_active=true;
+  } else {
+    Serial.print("zakazano");
+    tl_2_active=false;
+  }
+
+  Serial.print("  3-");
+  if(!tl_3_txt.equals("")) {
+    Serial.print("povoleno");
+    tl_3_active=true;
+  } else {
+    Serial.print("zakazano");
+    tl_3_active=false;
+  }
+
+  Serial.print("  4-");
+  if(!tl_4_txt.equals("")) {
+    Serial.print("povoleno");
+    tl_4_active=true;
+  } else {
+    Serial.print("zakazano");
+    tl_4_active=false;
+  }
+  Serial.println();
+
+  zobrazTlacitkaMenu();
   TFTscreen.setTextColor(Display_Menu_Button_Color);
   //TFTscreen.setFont(&FreeSerif9pt7b);
   //TFTscreen.setFont();
@@ -106,14 +150,22 @@ void setMenuTlacitka(String tl_1_txt, String tl_2_txt, String tl_3_txt, String t
   TFTscreen.print(tl_4_txt);
 }
 
-
 void zobrazTlacitkaMenu() {
   byte sirka_tlacitka = 39;
   byte vyska_tlacitka = 15;
   byte poziceTlacitka = 1;
   byte odskok_y = 113;
+  boolean povoleno = true;
   for(int i = 1; i <= 4; i++) {
-    TFTscreen.fillRect(poziceTlacitka, odskok_y, sirka_tlacitka, vyska_tlacitka, Display_Text_Color);
+    if(i==1) {povoleno = tl_1_active;}
+    if(i==2) {povoleno = tl_2_active;}
+    if(i==3) {povoleno = tl_3_active;}
+    if(i==4) {povoleno = tl_4_active;}
+    if(povoleno) {
+      TFTscreen.fillRect(poziceTlacitka, odskok_y, sirka_tlacitka, vyska_tlacitka, Display_Text_Color);
+    } else {
+      TFTscreen.fillRect(poziceTlacitka, odskok_y, sirka_tlacitka, vyska_tlacitka, Display_Backround_Color);
+    }
     poziceTlacitka = poziceTlacitka+1+sirka_tlacitka;
     Serial.print("poziceTlacitka : ");
     Serial.println(poziceTlacitka);
@@ -122,42 +174,53 @@ void zobrazTlacitkaMenu() {
 
 
 void zobrazZahlavi(String text){
-//void zobrazZahlavi(String text, uint16_t Display_Backround_Color, uint16_t Display_Text_Color){
   TFTscreen.setFont();
   TFTscreen.setTextSize(text_size);
   TFTscreen.setCursor(30, 10);
-  //if(zobrazit) {
-    TFTscreen.setTextColor(Display_Text_Color);
-    TFTscreen.drawFastHLine(5, 30, 150, Display_Text_Color);
-    TFTscreen.drawFastHLine(5, 31, 150, Display_Text_Color);
-    TFTscreen.drawFastHLine(5, 32, 150, Display_Text_Color);
-  /*} else {
-    TFTscreen.setTextColor(Display_Backround_Color);
-    TFTscreen.drawFastHLine(5, 30, 150, Display_Backround_Color);
-    TFTscreen.drawFastHLine(5, 31, 150, Display_Backround_Color);
-    TFTscreen.drawFastHLine(5, 32, 150, Display_Backround_Color);
-  }*/
+  TFTscreen.setTextColor(Display_Text_Color);
+  TFTscreen.drawFastHLine(5, 30, 150, Display_Text_Color);
+  TFTscreen.drawFastHLine(5, 31, 150, Display_Text_Color);
+  TFTscreen.drawFastHLine(5, 32, 150, Display_Text_Color);
   TFTscreen.print(text);
-  //TFTscreen.setCursor(0, 0);
 }
 
-menuVolby testMenuBtn() {
-  menuVolby posledniStisk;
+menuVolby testMenuBtn(byte pauza) {
   menuVolby stisk;
-  int pauza = 250;
-  if(getValBtnMenu() == LOW) {
+  //byte pauza = 250;
+  if(tl_1_active && getValBtnZpet() == LOW) {
     delay(pauza);
-    stisk = MENU;
-    return MENU;
-  } else if(getValBtnPlus() == LOW) {
+    stisk=ZPET;
+  } else if(tl_2_active && getValBtnMinus() == LOW) {
     delay(pauza);
-    return PLUS;
-  } else if(getValBtnMinus() == LOW) {
+    stisk=MINUS;
+  } else if(tl_3_active && getValBtnPlus() == LOW) {
     delay(pauza);
-    return MINUS;
-  } else if(getValBtnZpet() == LOW) {
+    stisk=PLUS;
+  } else if(tl_4_active && getValBtnMenu() == LOW) {
     delay(pauza);
-    return ZPET;
+    if (!operace[operaceId].equals("VAZENI")) {
+      stisk = OK;
+    } else {
+      stisk = MENU;
+    }
+  } else {
+    stisk=null;
+  }
+  return stisk;
+}
+
+byte indexOfOperace(String hledanaHodnota){
+  byte pozice = 0;
+  boolean nalezeno=false;
+  for(String hodnota : operace) {
+    if(hodnota==hledanaHodnota){
+      nalezeno=true;
+      break;
+    }
+    pozice++;
+  }
+  if(nalezeno) {
+    return pozice;
   } else {
     return null;
   }

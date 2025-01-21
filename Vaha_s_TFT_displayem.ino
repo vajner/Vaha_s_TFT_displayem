@@ -27,19 +27,27 @@ uint16_t      Display_Text_Color = Display_Color_Blue;
 uint16_t      Display_Backround_Color = Display_Color_Black;
 uint16_t      Display_Text_Color_Value = Display_Color_Magenta;
 uint16_t      Display_Menu_Button_Color = Display_Color_White;
-//uint8_t       Display_Veigth_Size = 6;
-float         Kalibracni_Hodnota = 1997;
+int         kalibracniHodnota = 0;   //1997;
+int         oldKalibracniHodnota = 0;
+byte pauzaTlacitka = 250;
+int pruchodu = 0;
+
 
 int sensorVal = 0;
 int sensorOldVal = 0;
 char vybranaOperace = 0;
-byte pozice_hodnoty_vahy_x = 15;
-byte pozice_hodnoty_vahy_y = 95;
+const byte pozice_hodnoty_vahy_x = 15;
+const byte pozice_hodnoty_vahy_y = 45;
+const byte vahaTextSize = 5;
+
 boolean vazeni = true;
 boolean rezim_menu = false;
+enum menuVolby {ZPET, PLUS, MINUS, MENU, OK, null};
+const String operace[6] = {"VAZENI", "NAVIGACE", "NASTAVENI", "KALIBRACE", "INFO", "LOGO"};
+byte operaceId=0;
 int cursorPosition = 0;
-enum menuVolby {ZPET, PLUS, MINUS, MENU, null};
-//enum operace {NASTAVENI, KALIBRACE};
+boolean zobrazeno = false;
+
 
 
 
@@ -75,30 +83,20 @@ void setup() {
   zobrazTlacitkaMenu();
   setMenuTlacitka("", "", "", "Menu");
   initVahovySenzor();
-
+  kalibracniHodnota = getKalibracniHodnota();
   //TFTscreen.setFont(&FreeSans18pt7b);
 }
 
 void loop() {
-  menuVolby tlacitkoMenu = testMenuBtn();
+  menuVolby tlacitkoMenu = testMenuBtn(pauzaTlacitka);
  
   switch (tlacitkoMenu) {
     case MENU: {
       Serial.println(" ---- Zvoleno MENU ---");
-      vazeni = false;
-      rezim_menu = true;
-      vymazZahlavi();
-      vymazVahu();
-      //zobrazZahlaviNasteveni(true, Display_Backround_Color, Display_Text_Color);
-      //zobrazZakladniMenu(true);
-      zobrazZahlavi("Nastaveni");
-      zobrazTlacitkaMenu();
-      vykresliMenu();
-      nakresliKuzor();
-      setMenuTlacitka("Zpet", "-", "+", "OK");
+      operaceId=indexOfOperace("NAVIGACE");
       break;
     }
-    case PLUS: {
+    /*case PLUS: {
       Serial.println(" ---- Zvoleno PLUS ---");
       menuUp();
       nakresliKuzor();
@@ -109,30 +107,63 @@ void loop() {
       menuDown();
       nakresliKuzor();
       break;
-    }
+    }*/
     case ZPET: {
       Serial.println(" ---- Zvoleno ZPET ---");
-      if(rezim_menu) {
-        vazeni = true;
-      }
+      Serial.print("cursorPosition=");
+      Serial.print(cursorPosition);
+      Serial.print("   operaceId pred=");
+      Serial.print(operaceId);
+      operaceId--;
+      Serial.print("   operaceId po=");
+      Serial.print(operaceId);
+      Serial.print("   operace=");
+      Serial.println(operace[operaceId]);
+      
+      /*if (operace[operaceId]=="VAZENI") {
+        //vazeni = true;
+        //operaceId--;
+        //cursorPosition=0;
+        vymazZahlavi();
+        vymazVahu();
+        zobrazZahlavi("Hmotnost");
+        zobrazTlacitkaMenu();
+        setMenuTlacitka("", "", "", "Menu");
+        initVahovySenzor();
+      }*/
       break;
     }
-    default: {
-      tlacitkoMenu = null;
+    case OK: {
+      if(operace[operaceId].equals("NAVIGACE")) {
+        Serial.println(" ---- Zvoleno OK ---");
+        Serial.print("operaceId pred=");
+        Serial.print(operaceId);
+        Serial.print("   operace=");
+        Serial.println(operace[operaceId]);
+        operaceId = operaceId+cursorPosition+1;
+        zobrazeno = false;
+        Serial.print("operaceId po=");
+        Serial.print(operaceId);
+        Serial.print("    operace=");
+        Serial.println(operace[operaceId]);
+      }
     }
+    /*default: {
+      tlacitkoMenu = null;
+    }*/
 
   }
 
-  if (vazeni) {
+  if (operace[operaceId]=="VAZENI") {
     // nacti hodnotu senzoru na pinu A0
     sensorVal = (vahovy_senzor.get_units(HX711_AVERAGE_MODE)+0.5);
     
     if (sensorVal != sensorOldVal) {
-      vahovy_senzor.set_scale(Kalibracni_Hodnota);
+      vahovy_senzor.set_scale(kalibracniHodnota);
       Serial.print("Vaha: ");
       Serial.println(sensorVal);
       TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
-      //TFTscreen.setTextSize(Display_Veigth_Size);
+      TFTscreen.setTextSize(vahaTextSize);
 
       // vycisti text pokud se hodnota zmenila
       TFTscreen.setTextColor(Display_Backround_Color);
@@ -146,13 +177,111 @@ void loop() {
       sensorOldVal = sensorVal;
       delay(1000);
     } 
-  } /*else {
+  } 
+  /*else {
     TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
     TFTscreen.setTextColor(Display_Backround_Color);
     TFTscreen.print(sensorOldVal);
   }*/
   
+  if(operace[operaceId]=="NAVIGACE") {
+    if(zobrazeno) {
+      //Serial.print("operace[operaceId]==NAVIGACE");
+      //Serial.print("     tlacitko-");
+      //Serial.println(tlacitkoMenu);
+      switch (tlacitkoMenu) {
+        case PLUS: {
+          Serial.println(" ---- Zvoleno PLUS ---");
+          menuUp();
+          nakresliKuzor();
+          break;
+        }
+        case MINUS: {
+          Serial.println(" ---- Zvoleno MINUS ---");
+          menuDown();
+          nakresliKuzor();
+          break;
+        }
+      }
+    } else {
+      vymazZahlavi();
+      vymazVahu();
+      //zobrazZahlaviNasteveni(true, Display_Backround_Color, Display_Text_Color);
+      //zobrazZakladniMenu(true);
+      zobrazZahlavi("Volby");
+      //zobrazTlacitkaMenu();
+      setMenuTlacitka("Zpet", "-", "+", "OK");
+      vykresliMenu();
+      nakresliKuzor();
+      zobrazeno=true;
+    }
+  }
+
+  if(operace[operaceId]=="LOGO" and !zobrazeno) {
+    Serial.print("operaceId=");
+    Serial.println(operaceId);
+    showLogo();
+    zobrazTlacitkaMenu();
+    setMenuTlacitka("Zpet", "", "", "");
+    zobrazeno=true;
+  }
+
+  if(operace[operaceId]=="NASTAVENI") {
+    if(zobrazeno) {
+      if (kalibracniHodnota != oldKalibracniHodnota) {
+        TFTscreen.setTextSize(vahaTextSize);
+        TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
+        // vycisti text pokud se hodnota zmenila
+        TFTscreen.setTextColor(Display_Backround_Color);
+        TFTscreen.print(oldKalibracniHodnota);
+        TFTscreen.setTextColor(Display_Text_Color_Value);
+        TFTscreen.setCursor(pozice_hodnoty_vahy_x, pozice_hodnoty_vahy_y);
+        TFTscreen.print(kalibracniHodnota);
+        oldKalibracniHodnota = kalibracniHodnota;
+        //delay(500);
+      } 
+      switch (tlacitkoMenu) {
+        case PLUS: {
+          Serial.print(" ---- Zvoleno PLUS ---");
+          Serial.print("pauzaTlacitka-");
+          Serial.println(pauzaTlacitka);
+          kalibracniHodnota++;
+          //pruchodu++;
+          if(pauzaTlacitka > 10) {
+            pauzaTlacitka=pauzaTlacitka-10;
+          }
+          break;
+        }
+        case MINUS: {
+          Serial.println(" ---- Zvoleno MINUS ---");
+          kalibracniHodnota--;
+          //pruchodu--;
+          if(pauzaTlacitka > 10) {
+            pauzaTlacitka=pauzaTlacitka-10;
+          }
+          break;
+        }
+        case OK: {
+          setKalibracniHodnota(kalibracniHodnota);
+        }
+        default:{
+          //pruchodu=0;
+          pauzaTlacitka=255;
+        }
+      }
+    } else {
+      Serial.print("operaceId=");
+      Serial.println(operaceId);
+      vymazZahlavi();
+      vymazVahu();
+      zobrazZahlavi("Nastaveni");
+      setMenuTlacitka("Zpet", "-", "+", "Ok");
+      zobrazeno=true;
+    }
+  }
 }
+
+
 
 void initVahovySenzor() {
   Serial.println("Inicializace vahoveho senzoru ....");
@@ -176,16 +305,27 @@ void initDisplay() {
   Serial.println("... Hotovo ....");
 }
 
-void setKalibracniHodnota(float kalibracniHodnota) {
+void setKalibracniHodnota(int kalibracniHodnota) {
+  Serial.print("Zapis hodnoty do EEPROM-");
+  Serial.print(kalibracniHodnota);
+  //EEPROM.update(0, kalibracniHodnota);
   EEPROM.write(0, kalibracniHodnota);
+  EEPROM.write(1, kalibracniHodnota >> 8);
+  Serial.println("    - zapsano");
 }
 
 int getKalibracniHodnota() {
-  int value = EEPROM.read(0);
-  if (isnan(value)) {
-    value = 0;
+  Serial.print("Nacitani dat z EEPROM-");
+  //int value = EEPROM.read(0);
+  int val;
+  val = (EEPROM.read(1) << 8);
+  val |= EEPROM.read(0);
+  if (isnan(val)) {
+    val = 0;
   }
-  return value;
+  Serial.print("nacteno=");
+  Serial.println(val);
+  return val;
 }
 
 
