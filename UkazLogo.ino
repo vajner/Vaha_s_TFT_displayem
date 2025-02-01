@@ -1,9 +1,9 @@
-
+//#include <Fonts/FreeSerif9pt7b.h>
 //#include <Fonts/FreeSerifBold12pt7b.h>
 //#include <Fonts/FreeSerifBold18pt7b.h>
 
 void showLogo() {
-  Serial.println("Zobrazeni loga .....");
+  //Serial.println("Zobrazeni loga .....");
   TFTscreen.fillRect(0, 0, 160, 128, Display_Color_Black);
   TFTscreen.setTextColor(Display_Backround_Color);
   TFTscreen.setCursor(0, 0);
@@ -31,7 +31,5 @@ void showLogo() {
   TFTscreen.print("Petr Vajner\n tel: 603 715 413");
 
   TFTscreen.setFont();
-  //delay(5000);
-  //TFTscreen.fillRect(0, 0, 160, 128, Display_Color_Black);
-  Serial.println("... Hotovo ....");
+  TFTscreen.fillRect(0, 0, 160, 128, Display_Color_Black);
 }

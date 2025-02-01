@@ -1,17 +1,6 @@
-
-
-
-
 //Menu
 const byte pocet_polozek_menu = 4;
 const String polozky_menu[pocet_polozek_menu] = {"Zapis vahy", "Kalibrace", "O produktu", "Kontakt"};
-
-// Navigation button variables
-//int readKey;
-// Menu control variables
-//int menuPage = 0;
-//int maxMenuPages = round(((sizeof(menuItems) / sizeof(String)) / 4) + .5);
-
 const byte text_size = 2;
 const byte menu_x = 20;
 const byte menu_y = 38;
@@ -23,16 +12,12 @@ boolean tl_2_active = true;
 boolean tl_3_active = true;
 boolean tl_4_active = true;
 
-
-//boolean inMenu = false;
-
 void vykresliMenu() {
   TFTscreen.setTextColor(Display_Menu_Button_Color);
   TFTscreen.setTextSize(text_size);
+  cursorPosition=0;
   byte y = menu_y;
   for(String polozka_menu : polozky_menu) {
-    Serial.print("Menu - pozice textu:");
-    Serial.println(y);
     TFTscreen.setCursor(menu_x, y);
     TFTscreen.print(polozka_menu);
     y = y + menu_vyska_radku;
@@ -43,23 +28,11 @@ void nakresliKuzor() {
   byte x = kurzor_x;
   byte y = menu_y;
   byte pruchod = 0;
-  Serial.print("nakresliKuzor() ---- ");
   TFTscreen.setTextSize(text_size);
 
   for(String polozka_menu : polozky_menu) {
     TFTscreen.setCursor(x, y);
-    Serial.print("y:");
-    Serial.print(y);
     y = y + menu_vyska_radku;
-    Serial.print("    vyska_radku:");
-    Serial.print(menu_vyska_radku);
-    Serial.print("   - celkem:");
-    Serial.print(y);
-    Serial.print("   pruchod:");
-    Serial.print(pruchod);
-    Serial.print("  cursorPosition:");
-    Serial.println(cursorPosition);
-
     if(pruchod == cursorPosition) {
       TFTscreen.setTextColor(Display_Menu_Button_Color);
       TFTscreen.print(kurzor);
@@ -74,71 +47,47 @@ void nakresliKuzor() {
 void menuDown(){
   cursorPosition = cursorPosition-1;
   rollMenu();
-  //delay(pauza);
 }
 
 void menuUp(){
   cursorPosition = cursorPosition+1;
   rollMenu();
-  //delay(pauza);
 }
 
 void rollMenu(){
-  Serial.print("rollMenu() : cursorPosition:");
-  Serial.print(cursorPosition);
   if(cursorPosition > pocet_polozek_menu-1){
     cursorPosition=0;
   }
   if(cursorPosition < 0){
     cursorPosition = pocet_polozek_menu-1;
   }
-  Serial.print("  nastaveno:");
-  Serial.println(cursorPosition);
 }
 
 void setMenuTlacitka(String tl_1_txt, String tl_2_txt, String tl_3_txt, String tl_4_txt) {
   byte y=116;
-  Serial.print("TL  1-");
   if(!tl_1_txt.equals("")) {
-    Serial.print("povoleno");
     tl_1_active=true;
   } else {
-    Serial.print("zakazano");
     tl_1_active=false;
   }
-  
-  Serial.print("  2-");
   if(!tl_2_txt.equals("")) {
-    Serial.print("povoleno");
     tl_2_active=true;
   } else {
-    Serial.print("zakazano");
     tl_2_active=false;
   }
-
-  Serial.print("  3-");
   if(!tl_3_txt.equals("")) {
-    Serial.print("povoleno");
     tl_3_active=true;
   } else {
-    Serial.print("zakazano");
     tl_3_active=false;
   }
-
-  Serial.print("  4-");
   if(!tl_4_txt.equals("")) {
-    Serial.print("povoleno");
     tl_4_active=true;
   } else {
-    Serial.print("zakazano");
     tl_4_active=false;
   }
-  Serial.println();
 
   zobrazTlacitkaMenu();
   TFTscreen.setTextColor(Display_Menu_Button_Color);
-  //TFTscreen.setFont(&FreeSerif9pt7b);
-  //TFTscreen.setFont();
   TFTscreen.setTextSize(1);
   TFTscreen.setCursor(8, y);
   TFTscreen.print(tl_1_txt);
@@ -167,11 +116,8 @@ void zobrazTlacitkaMenu() {
       TFTscreen.fillRect(poziceTlacitka, odskok_y, sirka_tlacitka, vyska_tlacitka, Display_Backround_Color);
     }
     poziceTlacitka = poziceTlacitka+1+sirka_tlacitka;
-    Serial.print("poziceTlacitka : ");
-    Serial.println(poziceTlacitka);
    }
 }
-
 
 void zobrazZahlavi(String text){
   TFTscreen.setFont();
@@ -186,7 +132,6 @@ void zobrazZahlavi(String text){
 
 menuVolby testMenuBtn(byte pauza) {
   menuVolby stisk;
-  //byte pauza = 250;
   if(tl_1_active && getValBtnZpet() == LOW) {
     delay(pauza);
     stisk=ZPET;
