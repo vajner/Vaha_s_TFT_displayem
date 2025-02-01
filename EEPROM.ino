@@ -7,55 +7,55 @@
 
 */
 void setKalibracniHodnota(float kalibracniHodnota) {
-  Serial.print("Zapis hodnoty do EEPROM - setKalibracniHodnota:");
-  Serial.println(kalibracniHodnota);
+  //Serial.print("Zapis hodnoty do EEPROM - setKalibracniHodnota:");
+  //Serial.println(kalibracniHodnota);
   EEPROM.put(5, kalibracniHodnota);
   delay(100);
 }
 
 float getKalibracniHodnota() {
-  Serial.print("Nacitani dat z EEPROM - getKalibracniHodnota:");
+  //Serial.print("Nacitani dat z EEPROM - getKalibracniHodnota:");
   float value;
   EEPROM.get(5, value);
   if (isnan(value)) {
     value = 0;
   }
-  Serial.println(value);
+  //Serial.println(value);
   return value;
 }
 
 void setKalibracniVaha(int kalibracniHodnota) {
-  Serial.print("Zapis hodnoty do EEPROM - setKalibracniVaha:");
-  Serial.println(kalibracniHodnota);
+  //Serial.print("Zapis hodnoty do EEPROM - setKalibracniVaha:");
+  //Serial.println(kalibracniHodnota);
   EEPROM.put(10, kalibracniHodnota);
   delay(100);
 }
 
 float getKalibracniVaha() {
-  Serial.print("Nacitani dat z EEPROM - getKalibracniVaha:");
+  //Serial.print("Nacitani dat z EEPROM - getKalibracniVaha:");
   int value;
   EEPROM.get(10, value);
   if (isnan(value)) {
     value = 0;
   }
-  Serial.println(float(value));
+  //Serial.println(float(value));
   return float(value);
 }
 
 void setKalibrovano(boolean kalibrovano) {
-  Serial.print("Zapis hodnoty do EEPROM - kalibrovano:");
-  Serial.println(kalibrovano);
+  //Serial.print("Zapis hodnoty do EEPROM - kalibrovano:");
+  //Serial.println(kalibrovano);
   EEPROM.put(13, kalibrovano);
   delay(100);
 }
 
 boolean getKalibrovano() {
-  Serial.print("Nacitani dat z EEPROM - getKalibrovano:");
+  //Serial.print("Nacitani dat z EEPROM - getKalibrovano:");
   int value;
   EEPROM.get(13, value);
   if (isnan(value)) {
     value = 0;
   }
-  Serial.println(value);
+  //Serial.println(value);
   return value;
 }

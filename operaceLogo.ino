@@ -8,7 +8,7 @@ void operaceLogo(menuVolby tlacitkoMenu) {
     }
   } else {
     showLogo();
-    //setMenuTlacitka("Zpet", "", "", "");
+    setMenuTlacitka("Zpet", "", "", "");
     zobrazeno = true;
   }
 }
